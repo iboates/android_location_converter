@@ -16,8 +16,8 @@ def make_reader(in_json, debug_flag=False):
     for item in json_data['locations']:
         date = datetime.datetime.fromtimestamp(int(item['timestampMs'])/1000).strftime('%Y-%m-%d')
         timestamp = datetime.datetime.fromtimestamp(int(item['timestampMs'])/1000).strftime('%H:%M:%S')
-        longitude = item['longitudeE7']/10000000
-        latitude = item['latitudeE7']/10000000
+        longitude = item['longitudeE7']/10000000.0
+        latitude = item['latitudeE7']/10000000.0
         accuracy = item['accuracy']
 
         if debug_flag:

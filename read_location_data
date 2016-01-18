@@ -27,7 +27,8 @@ def make_reader(in_json, debug_flag=False):
     # If there are any recorded activities in this entry, pick them apart by navigating through the json
         try:
             activities = build_field_dict(item['activitys'][0]['activities'], debug_flag=False)
-            sub_timestamp = item['activitys'][0]['timestampMs']
+            sub_date = datetime.datetime.fromtimestamp(int(item['activitys'][0]['timestampMs'])/1000).strftime('%Y-%m-%d')
+            sub_timestamp = datetime.datetime.fromtimestamp(int(item['activitys'][0]['timestampMs'])/1000).strftime('%H:%M:%S')
             if debug_flag:
                 for activity in item['activitys']:
                     for activitie in activity['activities']:
@@ -43,7 +44,7 @@ def make_reader(in_json, debug_flag=False):
 
         i+=1
 
-        yield [date, timestamp, sub_timestamp, longitude, latitude, accuracy, activities]
+        yield [date, timestamp, sub_date, sub_timestamp, longitude, latitude, accuracy, activities]
 
 def build_field_dict(in_dict, debug_flag=False):
 
@@ -62,13 +63,23 @@ def setup_fields(in_layer, debug_flag=False):
     date_field = FieldDefn('Date', ogr.OFTDate)
     in_layer.CreateField(date_field)
 
+    date_sub_field = FieldDefn('Date_Sub', ogr.OFTDate)
+    in_layer.CreateField(date_sub_field)
+
     date_str_field = FieldDefn('Date_Str', ogr.OFTString)
     date_str_field.SetWidth(10)
     in_layer.CreateField(date_str_field)
 
+    date_sub_str_field = FieldDefn('DateSubStr', ogr.OFTDate)
+    in_layer.CreateField(date_sub_str_field)
+
     timestamp_field = FieldDefn('Time', ogr.OFTString)
     timestamp_field.SetWidth(8)
     in_layer.CreateField(timestamp_field)
+
+    timestamp_sub_field = FieldDefn('Time_Sub', ogr.OFTString)
+    timestamp_sub_field.SetWidth(8)
+    in_layer.CreateField(timestamp_sub_field)
 
     longitude_field = FieldDefn('Longitude', ogr.OFTString)
     in_layer.CreateField(longitude_field)
@@ -87,15 +98,18 @@ def fill_fields(in_feature, in_entry, debug_flag=False):
 
     # Fill out all the data using the proper item yielded by the reader
     in_feature.SetField('Date', in_entry[0])
+    in_feature.SetField('Date_Sub', in_entry[2])
     in_feature.SetField('Date_Str', in_entry[0])
+    in_feature.SetField('DateSubStr', in_entry[2])
     in_feature.SetField('Time', in_entry[1])
-    in_feature.SetField('Longitude', in_entry[3])
-    in_feature.SetField('Latitude', in_entry[4])
-    in_feature.SetField('Accuracy', in_entry[5])
+    in_feature.SetField('Time_Sub', in_entry[3])
+    in_feature.SetField('Longitude', in_entry[4])
+    in_feature.SetField('Latitude', in_entry[5])
+    in_feature.SetField('Accuracy', in_entry[6])
 
     for confidence_field in ['still', 'tilting', 'inVehicle', 'onBicycle', 'walking', 'onFoot', 'unknown']:
         try:
-            in_feature.SetField(confidence_field, in_entry[6][confidence_field])
+            in_feature.SetField(confidence_field, in_entry[7][confidence_field])
         except:
             if debug_flag:
                 print('No field named {0}'.format(confidence_field))
@@ -111,8 +125,8 @@ def write_output(in_reader, out_location, out_name, out_type, debug_flag=False):
         out_data = driver.CreateDataSource('{0}.shp'.format(splitext(osjoin(out_location, out_name))[0]))
     elif out_type == 'GeoJSON':
         out_data = driver.CreateDataSource('{0}.geojson'.format(splitext(osjoin(out_location, out_name))[0]))
-    else:
-        print('unrecognized value for output data type (output_type).  Valid values are "ESRI_Shapefile", "GeoJSON".')
+    elif out_type == 'KML':
+        out_data = driver.CreateDataSource('{0}.kml'.format(splitext(osjoin(out_location, out_name))[0]))
     out_layer = out_data.CreateLayer('layer', spatial_reference, wkbPoint)
 
     # Set up fields
@@ -125,7 +139,7 @@ def write_output(in_reader, out_location, out_name, out_type, debug_flag=False):
     for entry in in_reader:
 
         point = Geometry(wkbPoint)
-        point.SetPoint(0, entry[3], entry[4])
+        point.SetPoint(0, entry[4], entry[5])
         feature = Feature(layer_definition)
         feature.SetGeometry(point)
 
@@ -164,8 +178,11 @@ def main():
     parser = init_parser()
     args = parser.parse_args()
     reader = make_reader(args.location_history_file)
-    write_output(reader, args.output_location, args.output_name, args.output_type.replace('_', ' '))
-    print('Success')
+    if args.output_type in ['ESRI_Shapefile','GeoJSON','KML']:
+        write_output(reader, args.output_location, args.output_name, args.output_type.replace('_', ' '))
+        print('Success')
+    else:
+        print('Output type not recognized.  Recognized values are "ESRI_Shapefile", "GeoJSON" and "KML".')
 
 if __name__ == '__main__':
     main()

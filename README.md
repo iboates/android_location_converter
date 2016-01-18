@@ -13,7 +13,7 @@ How to use it:
   
   Parameters:
   
-    path_to_location_history_file (string) - Path to the location history file.  Pretty self-explanatory.
+    path_to_location_history_file (string) - Path to the location history file.  You can get yours here: https://takeout.google.com/settings/takeout?utm_source=ob&utm_campaign=takeout&hl=en
   
     output_folder (string) - Path to the folder to write the output in.
   
@@ -23,4 +23,6 @@ How to use it:
     
 Other miscellaneous notes:
 
-You might notice that the date field is written twice, once as an actual date datatype, and once again as a string.  This is because I was inspecting my output using QGIS, which seems to have some issues when querying date columns.  So the date string field is just there as a fallback.
+You might notice that the date and time fields are written twice, once as an actual date datatype, and once again as a string.  This is because I was inspecting my output using QGIS, which seems to have some issues when querying date columns.  So the date string field is just there as a fallback.
+
+I don't completely understand what the "sub timestamp" and "sub date" fields represent.  The "sub" ones are buried in the original JSON along with the activities and confidence levels, but I wanted to be comprehensive so I ripped them out with everything else.

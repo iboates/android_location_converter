@@ -6,11 +6,10 @@ from osgeo import ogr
 from osgeo.ogr import Feature, FieldDefn, Geometry, GetDriverByName, wkbPoint
 from osgeo.osr import SpatialReference
 
-def make_reader(in_json, debug_flag=False):
+def make_reader(in_json):
 
     # Open location history data
     json_data = json.loads(open(in_json).read())
-    i = 0
 
     # Get the easy fields
     for item in json_data['locations']:
@@ -20,44 +19,23 @@ def make_reader(in_json, debug_flag=False):
         latitude = item['latitudeE7']/10000000.0
         accuracy = item['accuracy']
 
-        if debug_flag:
-            print('entry #{0} - timestamp: {1}\nentry #{0} - longitude: {2}\nentry #{0} - latitude: {3}\nentry#{0} - \
-                   accuracy - {4}'.format(i, timestamp, longitude, latitude, accuracy))
-
     # If there are any recorded activities in this entry, pick them apart by navigating through the json
         try:
-            activities = build_field_dict(item['activitys'][0]['activities'], debug_flag=False)
+            activities = build_field_dict(item['activitys'][0]['activities'])
             sub_date = datetime.datetime.fromtimestamp(int(item['activitys'][0]['timestampMs'])/1000).strftime('%Y-%m-%d')
             sub_timestamp = datetime.datetime.fromtimestamp(int(item['activitys'][0]['timestampMs'])/1000).strftime('%H:%M:%S')
-            if debug_flag:
-                for activity in item['activitys']:
-                    for activitie in activity['activities']:
-                        print('entry #{0} - type: {1}, confidence: {2}'.format(i, activitie['type'],
-                              activitie['confidence']))
         except:
-            if debug_flag:
-                print('entry #{0} - try/except to get activity list failed'.format(i))
             activities = None
-
-        if debug_flag:
-            print('entry #{0} - sub_timestamp: {1}'.format(i, sub_timestamp))
-
-        i+=1
 
         yield [date, timestamp, sub_date, sub_timestamp, longitude, latitude, accuracy, activities]
 
-def build_field_dict(in_dict, debug_flag=False):
+def build_field_dict(in_dict):
 
     # This converts the list of dictionaries holding confidence values into one dictionary mapping each activity to its
     # respective confidence.
     return dict((in_dict['type'], in_dict['confidence']) for in_dict in in_dict)
 
-    if debug_flag:
-        print(master_dict)
-
-    return master_dict
-
-def setup_fields(in_layer, debug_flag=False):
+def setup_fields(in_layer):
 
     # Create all the fields that will exist in the output data
     date_field = FieldDefn('Date', ogr.OFTDate)
@@ -94,7 +72,7 @@ def setup_fields(in_layer, debug_flag=False):
         add_field = FieldDefn(confidence_field, ogr.OFTInteger)
         in_layer.CreateField(add_field)
 
-def fill_fields(in_feature, in_entry, debug_flag=False):
+def fill_fields(in_feature, in_entry):
 
     # Fill out all the data using the proper item yielded by the reader
     in_feature.SetField('Date', in_entry[0])
@@ -111,10 +89,9 @@ def fill_fields(in_feature, in_entry, debug_flag=False):
         try:
             in_feature.SetField(confidence_field, in_entry[7][confidence_field])
         except:
-            if debug_flag:
-                print('No field named {0}'.format(confidence_field))
+            pass
 
-def write_output(in_reader, out_location, out_name, out_type, debug_flag=False):
+def write_output(in_reader, out_location, out_name, out_type):
 
     # Set up file to write to
     feature_index = 0

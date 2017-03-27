@@ -26,6 +26,8 @@ def make_reader(in_json):
             sub_timestamp = datetime.datetime.fromtimestamp(int(item['activitys'][0]['timestampMs'])/1000).strftime('%H:%M:%S')
         except:
             activities = None
+            sub_date = None
+            sub_timestamp = None
 
         yield [date, timestamp, sub_date, sub_timestamp, longitude, latitude, accuracy, activities]
 
